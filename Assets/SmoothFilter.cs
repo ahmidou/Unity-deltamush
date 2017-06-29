@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
- 
+
 /*
 	Laplacian Smooth Filter, HC-Smooth Filter
  
@@ -24,8 +24,6 @@ public class SmoothFilter : MonoBehaviour
 			for (int j=0; j<maxNeighbors; j++)
 			{
 				var i = adjacencyMatrix[vi, j];
-				if (i == vi)
-					continue;
 				if (i < 0)
 					break;
 
@@ -83,6 +81,48 @@ public class SmoothFilter : MonoBehaviour
 		return wv;
 	}
 
+	public static float[,] distanceWeightedLaplacianFilter(Vector3[] sv, float[,] interpolants, int[,] adjacencyMatrix)
+	{
+		int maxChannels = interpolants.GetLength(1);
+		int maxNeighbors = adjacencyMatrix.GetLength(1);
+
+		Debug.Assert(sv.Length == interpolants.GetLength(0));
+		var res = new float[sv.Length, maxChannels];
+
+		for (int vi=0; vi < sv.Length; vi++)
+		{
+			// C# arrays always initialized to 0
+			for (int ch = 0; ch < maxChannels; ch++)
+				res[vi, ch] = 0.0f;
+
+			float totalWeight = 0.0f;
+			for (int j=0; j < maxNeighbors; j++)
+			{
+				var i = adjacencyMatrix[vi, j];
+				if (i == vi)
+					continue;
+				if (i < 0)
+					break;
+
+				float x = sv[i].x - sv[vi].x;
+				float y = sv[i].y - sv[vi].y;
+				float z = sv[i].z - sv[vi].z;
+				float w = 1.0f / Mathf.Sqrt(x*x+y*y+z*z);
+				for (int ch = 0; ch < maxChannels; ch++)
+					res[vi, ch] += (interpolants[i, ch] - interpolants[vi, ch]) * w;
+				totalWeight += w;
+			}
+
+			for (int ch = 0; ch < maxChannels; ch++)
+			{
+				res[vi, ch] /= totalWeight;
+				res[vi, ch] += interpolants[vi, ch];
+			}
+		}
+
+		return res;
+	}
+
 	/*
 		HC (Humphrey’s Classes) Smooth Algorithm - Reduces Shrinkage of Laplacian Smoother
  
@@ -95,10 +135,10 @@ public class SmoothFilter : MonoBehaviour
 	{
 		Vector3[] wv = new Vector3[sv.Length];
 		Vector3[] bv = new Vector3[sv.Length];
- 
+
 		// Perform Laplacian Smooth
 		wv = laplacianFilter(sv, adjacencyMatrix);
- 
+
 		// Compute Differences
 		for(int i=0; i<wv.Length; i++)
 		{
@@ -106,7 +146,7 @@ public class SmoothFilter : MonoBehaviour
 			bv[i].y = wv[i].y - (alpha * sv[i].y + ( 1 - alpha ) * sv[i].y );
 			bv[i].z = wv[i].z - (alpha * sv[i].z + ( 1 - alpha ) * sv[i].z );
 		}
- 
+
 		int maxNeighbors = adjacencyMatrix.GetLength(1);
 
 		for(int j=0; j<bv.Length; j++)
@@ -117,7 +157,7 @@ public class SmoothFilter : MonoBehaviour
 			float dx = 0.0f;
 			float dy = 0.0f;
 			float dz = 0.0f;
- 
+
 			//Debug.Log("Vertex Index Length = "+vertexIndexes.Length);
 			// Add the vertices and divide by the number of vertices
 			int count = 0;
@@ -131,7 +171,7 @@ public class SmoothFilter : MonoBehaviour
 				dz += bv[i].z;
 				++count;
 			} 
-				
+
 			if (count == 0)
 				Debug.Log("Empty!");
 
@@ -139,7 +179,7 @@ public class SmoothFilter : MonoBehaviour
 			wv[j].y -= beta * bv[j].y + ((1 - beta) / count) * dy;
 			wv[j].z -= beta * bv[j].z + ((1 - beta) / count) * dz;
 		}
- 
+
 		return wv;
 	}
 }
