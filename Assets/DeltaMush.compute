@@ -1,7 +1,7 @@
 ﻿#pragma kernel DeformMesh
 #pragma kernel LaplacianFilter
 #pragma kernel WeightedLaplacianFilter
-#define ThreadGroupSizeX 1
+#define ThreadGroupSizeX 512
 
 struct BoneWeights
 {
@@ -22,6 +22,7 @@ StructuredBuffer<BoneWeights> Weights;
 StructuredBuffer<float4x4> Bones;
 StructuredBuffer<int> Adjacency;
 int AdjacentNeighborCount;
+int VertexCount;
 
 StructuredBuffer<OutputVertex> Input;
 StructuredBuffer<OutputVertex> Delta;
@@ -35,6 +36,8 @@ RWStructuredBuffer<OutputVertex> Output;
 void DeformMesh (uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
 	int idx = ThreadGroupSizeX * groupID.x + groupThreadID.x;
+	if (idx >= VertexCount)
+		return;
 
 	float3 pos = Vertices[idx];
 	float3 normal = Normals[idx];
@@ -56,6 +59,8 @@ void DeformMesh (uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThrea
 void LaplacianFilter (uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
 	int idx = ThreadGroupSizeX * groupID.x + groupThreadID.x;
+	if (idx >= VertexCount)
+		return;
 
 	float3 p = float3(0,0,0);
 	float3 n = float3(0,0,0);
@@ -86,6 +91,8 @@ void LaplacianFilter (uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_Group
 void WeightedLaplacianFilter (uint3 groupID : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
 	int idx = ThreadGroupSizeX * groupID.x + groupThreadID.x;
+	if (idx >= VertexCount)
+		return;
 
 	float3 p = float3(0,0,0);
 	float3 n = float3(0,0,0);
