@@ -5,9 +5,10 @@ using System.IO;
 
 public class DeltaMushSkinnedMesh : MonoBehaviour
 {
-	public int iterations = 8;
+	public int iterations = 10;
 	public bool deformNormals = true;
 	public bool weightedSmooth = true;
+	public bool useCompute = true;
 
 	public bool debug = false;
 	public bool smoothOnly = false;
@@ -41,22 +42,23 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	internal Func<Vector3[], int[,], Vector3[]> smoothFilter;
 
 	// Compute
-	public bool useCompute = true;
-	public Shader shader;
+	[HideInInspector]
+	public Shader ductTapedShader;
+	[HideInInspector]
 	public ComputeShader computeShader;
 	private int deformKernel;
 	private int laplacianKernel;
 	private int computeThreadGroupSizeX;
 
-	private ComputeBuffer verticesCB;
-	private ComputeBuffer normalsCB;
-	private ComputeBuffer deltavCB;
-	private ComputeBuffer deltanCB;
-	private ComputeBuffer weightsCB;
-	private ComputeBuffer bonesCB;
-	private ComputeBuffer adjacencyCB;
-	private ComputeBuffer[] outputCB = new ComputeBuffer[3];
-	public Material material;
+	internal ComputeBuffer verticesCB;
+	internal ComputeBuffer normalsCB;
+	internal ComputeBuffer deltavCB;
+	internal ComputeBuffer deltanCB;
+	internal ComputeBuffer weightsCB;
+	internal ComputeBuffer bonesCB;
+	internal ComputeBuffer adjacencyCB;
+	internal ComputeBuffer[] outputCB = new ComputeBuffer[3];
+	internal Material ductTapedMaterial;
 
 	// Experiment with blending bone weights
 	internal float[,] prefilteredBoneWeights;
@@ -113,6 +115,9 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 		computeThreadGroupSizeX = (int)threadGroupSizeX;
 		computeShader.GetKernelThreadGroupSizes(laplacianKernel, out threadGroupSizeX, out threadGroupSizeY, out threadGroupSizeZ);
 		Debug.Assert(computeThreadGroupSizeX == (int)threadGroupSizeX);
+
+		ductTapedMaterial = new Material(ductTapedShader);
+		ductTapedMaterial.CopyPropertiesFromMaterial(skin.sharedMaterial);
 
 		// Experiment with blending bone weights
 		BoneWeight[] bw = mesh.boneWeights;
@@ -382,7 +387,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 			computeShader.SetBuffer(deformKernel, "Normals", normalsCB);
 			computeShader.SetBuffer(deformKernel, "Output", outputCB[0]);
 			computeShader.Dispatch(deformKernel, threadGroupsX, 1, 1);
-			material.SetBuffer("Vertices", outputCB[0]);
+			ductTapedMaterial.SetBuffer("Vertices", outputCB[0]);
 
 			computeShader.SetBool("DeltaPass", true);
 			computeShader.SetBuffer(deformKernel, "Vertices", deltavCB);
@@ -396,7 +401,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 				if (lastIteration)
 				{
 					computeShader.SetBuffer(laplacianKernel, "Delta", outputCB[2]);
-					material.SetBuffer("Vertices", outputCB[(i+1)%2]);
+					ductTapedMaterial.SetBuffer("Vertices", outputCB[(i+1)%2]);
 				}
 				computeShader.SetBool("DeltaPass", lastIteration && !smoothOnly);
 				computeShader.SetBuffer(laplacianKernel, "Input", outputCB[i%2]);
@@ -404,7 +409,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 				computeShader.Dispatch(laplacianKernel, threadGroupsX, 1, 1);
 			}
 
-			Graphics.DrawMesh(mesh, Matrix4x4.identity, material, 0);
+			Graphics.DrawMesh(mesh, Matrix4x4.identity, ductTapedMaterial, 0);
 			return;
 		}
 

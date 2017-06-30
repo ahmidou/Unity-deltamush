@@ -1,10 +1,12 @@
 fileFormatVersion: 2
 guid: 1ddff09ac0ce84f0387c8bd240fb06cd
-timeCreated: 1498565019
+timeCreated: 1498815180
 licenseType: Pro
 MonoImporter:
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - ductTapedShader: {fileID: 4800000, guid: fc73d8399d3274423b9e76384db6164c, type: 3}
+  - computeShader: {fileID: 7200000, guid: a0f745547481c4de8b248c0d7cff47ba, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
