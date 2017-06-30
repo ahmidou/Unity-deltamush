@@ -434,7 +434,10 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	void DrawMesh()
 	{
 		if (useCompute)
+		{
+			mesh.bounds = skin.bounds; // skin is actually disabled, so it only remembers last animation frame
 			Graphics.DrawMesh(mesh, Matrix4x4.identity, ductTapedMaterial, 0);
+		}
 		else
 			Graphics.DrawMesh(meshForCPUOutput, Matrix4x4.identity, skin.sharedMaterial, 0);
 	}
