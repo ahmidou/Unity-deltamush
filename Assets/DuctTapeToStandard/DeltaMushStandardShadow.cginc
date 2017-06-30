@@ -146,27 +146,21 @@ struct OutputVertex
 };
 StructuredBuffer<OutputVertex> Vertices;
 
-VertexInput loadVertex(uint id)
+VertexInput loadVertex(uint id, VertexInput v)
 {
-	/*
-    float4 vertex   : POSITION;
-    float3 normal   : NORMAL;
-    float2 uv0      : TEXCOORD0;
-    #if defined(UNITY_STANDARD_USE_SHADOW_UVS) && defined(_PARALLAXMAP)
-        half4 tangent   : TANGENT;
-    #endif
-    UNITY_VERTEX_INPUT_INSTANCE_ID
-	*/
-
-	VertexInput vi;
-	vi.vertex = float4(Vertices[id].pos, 1);//float4(0,0,0,1);
+	VertexInput vi = v;
+	vi.vertex = float4(Vertices[id].pos, 1);
 	vi.normal = Vertices[id].normal;
-	vi.uv0 = float2(0,0);
+
+	/*
+    #if defined(UNITY_STANDARD_USE_SHADOW_UVS) && defined(_PARALLAXMAP)
+        vi.tangent.xyz = Vertices[id].tangent;
+    #endif*/
 
 	return vi;
 }
 
-void vertShadowCaster2 (uint id : SV_VertexID,
+void vertShadowCaster_DeltaMush (uint id : SV_VertexID, VertexInput v,
     #ifdef UNITY_STANDARD_USE_SHADOW_OUTPUT_STRUCT
     out VertexOutputShadowCaster o,
     #endif
@@ -175,7 +169,7 @@ void vertShadowCaster2 (uint id : SV_VertexID,
     #endif
     out float4 opos : SV_POSITION)
 {
-	vertShadowCaster(loadVertex(id),
+	vertShadowCaster(loadVertex(id, v),
 	#ifdef UNITY_STANDARD_USE_SHADOW_OUTPUT_STRUCT
     	o,
     #endif

@@ -86,7 +86,7 @@ Shader "DuctTapedStandardForDeltaMush"
 			#pragma multi_compile_fog
 			#pragma multi_compile_instancing
 
-			#pragma vertex vertBase2
+			#pragma vertex vertBase_DeltaMush
 			#pragma fragment fragBase
 			#include "DeltaMushStandardCoreForward.cginc"
 
@@ -120,7 +120,7 @@ Shader "DuctTapedStandardForDeltaMush"
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
 
-			#pragma vertex vertAdd2
+			#pragma vertex vertAdd_DeltaMush
 			#pragma fragment fragAdd
 			#include "DeltaMushStandardCoreForward.cginc"
 
@@ -146,7 +146,7 @@ Shader "DuctTapedStandardForDeltaMush"
 			#pragma multi_compile_shadowcaster
 			#pragma multi_compile_instancing
 
-			#pragma vertex vertShadowCaster2
+			#pragma vertex vertShadowCaster_DeltaMush
 			#pragma fragment fragShadowCaster
 
 			#include "DeltaMushStandardShadow.cginc"
@@ -248,7 +248,7 @@ Shader "DuctTapedStandardForDeltaMush"
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
 
-			#pragma vertex vertBase2
+			#pragma vertex vertBase_DeltaMush
 			#pragma fragment fragBase
 			#include "DeltaMushStandardCoreForward.cginc"
 
@@ -280,7 +280,7 @@ Shader "DuctTapedStandardForDeltaMush"
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog
 			
-			#pragma vertex vertAdd2
+			#pragma vertex vertAdd_DeltaMush
 			#pragma fragment fragAdd
 			#include "DeltaMushStandardCoreForward.cginc"
 
@@ -302,7 +302,7 @@ Shader "DuctTapedStandardForDeltaMush"
 			#pragma skip_variants SHADOWS_SOFT
 			#pragma multi_compile_shadowcaster
 
-			#pragma vertex vertShadowCaster2
+			#pragma vertex vertShadowCaster_DeltaMush
 			#pragma fragment fragShadowCaster
 
 			#include "DeltaMushStandardShadow.cginc"
