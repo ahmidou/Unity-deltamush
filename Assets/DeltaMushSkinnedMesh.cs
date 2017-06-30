@@ -40,6 +40,23 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	internal int deltaIterations = -1;
 	internal Func<Vector3[], int[,], Vector3[]> smoothFilter;
 
+	// Compute
+	public bool useCompute = true;
+	public Shader shader;
+	public ComputeShader computeShader;
+	private int deformKernel;
+	private int laplacianKernel;
+
+	private ComputeBuffer verticesCB;
+	private ComputeBuffer normalsCB;
+	private ComputeBuffer deltavCB;
+	private ComputeBuffer deltanCB;
+	private ComputeBuffer weightsCB;
+	private ComputeBuffer bonesCB;
+	private ComputeBuffer adjacencyCB;
+	private ComputeBuffer[] outputCB = new ComputeBuffer[3];
+	public Material material;
+
 	// Experiment with blending bone weights
 	internal float[,] prefilteredBoneWeights;
 	public bool usePrefilteredBoneWeights = false;
@@ -53,10 +70,41 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 		deformedMesh = new DeformedMesh(mesh.vertexCount);
 
 		adjacencyMatrix = GetCachedAdjacencyMatrix(mesh);
-		smoothFilter = GetSmoothFilter(weightedSmooth);
+		smoothFilter = GetSmoothFilter();
 		deltaV = GetSmoothDeltas(mesh.vertices, adjacencyMatrix, smoothFilter, iterations);
 		deltaN = GetSmoothDeltas(mesh.normals, adjacencyMatrix, smoothFilter, iterations);
 		deltaIterations = iterations;
+
+		// Compute
+		verticesCB = new ComputeBuffer(mesh.vertices.Length, 12);
+		verticesCB.SetData(mesh.vertices);
+		normalsCB = new ComputeBuffer(mesh.vertices.Length, 12);
+		normalsCB.SetData(mesh.normals);
+		deltavCB = new ComputeBuffer(mesh.vertices.Length, 12);
+		deltavCB.SetData(deltaV);
+		deltanCB = new ComputeBuffer(mesh.vertices.Length, 12);
+		deltanCB.SetData(deltaN);
+		weightsCB = new ComputeBuffer(mesh.vertices.Length, 4*2*4);
+		weightsCB.SetData(mesh.boneWeights);
+		adjacencyCB = new ComputeBuffer(adjacencyMatrix.Length, 4);
+		var adjArray = new int[adjacencyMatrix.Length];
+		Buffer.BlockCopy(adjacencyMatrix, 0, adjArray, 0, adjacencyMatrix.Length * sizeof(int));
+		adjacencyCB.SetData(adjArray);
+		bonesCB = new ComputeBuffer(skin.bones.Length, 4*4*4);
+
+		outputCB[0] = new ComputeBuffer(mesh.vertices.Length, 6*4);
+		outputCB[1] = new ComputeBuffer(mesh.vertices.Length, 6*4);
+		outputCB[2] = new ComputeBuffer(mesh.vertices.Length, 6*4);
+
+		deformKernel = computeShader.FindKernel("DeformMesh");
+		computeShader.SetBuffer(deformKernel, "Vertices", verticesCB);
+		computeShader.SetBuffer(deformKernel, "Normals", normalsCB);
+		computeShader.SetBuffer(deformKernel, "Weights", weightsCB);
+		computeShader.SetBuffer(deformKernel, "Bones", bonesCB);
+
+		laplacianKernel = GetSmoothKernel();
+		computeShader.SetBuffer(laplacianKernel, "Adjacency", adjacencyCB);
+		computeShader.SetInt("AdjacentNeighborCount", adjacencyMatrix.GetLength(1));
 
 
 		// Experiment with blending bone weights
@@ -153,8 +201,16 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	}
 	#endregion
 
+	private int GetSmoothKernel()
+	{
+		if (weightedSmooth)
+			return computeShader.FindKernel("WeightedLaplacianFilter");
+		else
+			return computeShader.FindKernel("LaplacianFilter");
+	}
+
 	#region Delta Mush implementation
-	private static Func<Vector3[], int[,], Vector3[]> GetSmoothFilter(bool weightedSmooth)
+	private Func<Vector3[], int[,], Vector3[]> GetSmoothFilter()
 	{
 		if (weightedSmooth)
 			return SmoothFilter.distanceWeightedLaplacianFilter;
@@ -181,13 +237,21 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	void UpdateDeltaMush()
 	{
 		var lastFilter = smoothFilter;
-		smoothFilter = GetSmoothFilter(weightedSmooth);
+		smoothFilter = GetSmoothFilter();
 
 		if ((iterations > 0 && iterations != deltaIterations) || smoothFilter != lastFilter)
 		{
 			deltaV = GetSmoothDeltas(mesh.vertices, adjacencyMatrix, smoothFilter, iterations);
 			deltaN = GetSmoothDeltas(mesh.normals, adjacencyMatrix, smoothFilter, iterations);
 			deltaIterations = iterations;
+
+			// compute
+			laplacianKernel = GetSmoothKernel();
+			computeShader.SetBuffer(laplacianKernel, "Adjacency", adjacencyCB);
+			computeShader.SetInt("AdjacentNeighborCount", adjacencyMatrix.GetLength(1));
+
+			deltavCB.SetData(deltaV);
+			deltanCB.SetData(deltaN);
 		}
 
 		Matrix4x4[] boneMatrices = new Matrix4x4[skin.bones.Length];
@@ -223,7 +287,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 				for (int i = 0; i < deformedMesh.vertexCount; i++)
 				{
 					deformedMesh.normals[i] = deformedMesh.normals[i] + deformedMesh.deltaN[i];
-					deformedMesh.normals[i].Normalize();
+					//deformedMesh.normals[i].Normalize();
 				}
 
 			return;
@@ -270,7 +334,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 			deformedMesh.deltaV[i] = vertexMatrix.MultiplyVector(deltaV[i]);
 			deformedMesh.deltaN[i] = vertexMatrix.MultiplyVector(deltaN[i]);
 		}
-
+			
 		for (int i = 0; i < iterations; i++)
 		{
 			deformedMesh.vertices = smoothFilter(deformedMesh.vertices, adjacencyMatrix);
@@ -286,7 +350,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 			for (int i = 0; i < deformedMesh.vertexCount; i++)
 			{
 				deformedMesh.normals[i] = deformedMesh.normals[i] + deformedMesh.deltaN[i];
-				deformedMesh.normals[i].Normalize();
+				//deformedMesh.normals[i].Normalize();
 			}
 	}
 	#endregion
@@ -294,6 +358,44 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	#region Helpers
 	void DrawMesh()
 	{
+		if (useCompute)
+		{
+			Matrix4x4[] boneMatrices = new Matrix4x4[skin.bones.Length];
+			for (int i = 0; i < boneMatrices.Length; i++)
+				boneMatrices[i] = skin.bones[i].localToWorldMatrix * mesh.bindposes[i];
+			bonesCB.SetData(boneMatrices);
+			computeShader.SetBool("DeltaPass", false);
+			computeShader.SetBuffer(deformKernel, "Bones", bonesCB);
+			computeShader.SetBuffer(deformKernel, "Vertices", verticesCB);
+			computeShader.SetBuffer(deformKernel, "Normals", normalsCB);
+			computeShader.SetBuffer(deformKernel, "Output", outputCB[0]);
+			computeShader.Dispatch(deformKernel, mesh.vertices.Length, 1, 1);
+			material.SetBuffer("Vertices", outputCB[0]);
+
+			computeShader.SetBool("DeltaPass", true);
+			computeShader.SetBuffer(deformKernel, "Vertices", deltavCB);
+			computeShader.SetBuffer(deformKernel, "Normals", deltanCB);
+			computeShader.SetBuffer(deformKernel, "Output", outputCB[2]);
+			computeShader.Dispatch(deformKernel, mesh.vertices.Length, 1, 1);
+
+			for (int i = 0; i < iterations; i++)
+			{
+				bool lastIteration = i == iterations - 1;
+				if (lastIteration)
+				{
+					computeShader.SetBuffer(laplacianKernel, "Delta", outputCB[2]);
+					material.SetBuffer("Vertices", outputCB[(i+1)%2]);
+				}
+				computeShader.SetBool("DeltaPass", lastIteration && !smoothOnly);
+				computeShader.SetBuffer(laplacianKernel, "Input", outputCB[i%2]);
+				computeShader.SetBuffer(laplacianKernel, "Output", outputCB[(i+1)%2]);
+				computeShader.Dispatch(laplacianKernel, mesh.vertices.Length, 1, 1);
+			}
+
+			Graphics.DrawMesh(mesh, Matrix4x4.identity, material, 0);
+			return;
+		}
+
 		Bounds bounds = new Bounds();
 		for (int i = 0; i < deformedMesh.vertexCount; i++)
 			bounds.Encapsulate(deformedMesh.vertices[i]);
