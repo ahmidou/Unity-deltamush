@@ -297,7 +297,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 100000, guid: 3a8ab4f370be5413e921bd4d97b952da, type: 3}
       propertyPath: m_Name
-      value: Ethan (2)
+      value: Ethan (Smooth only)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 3a8ab4f370be5413e921bd4d97b952da, type: 3}
@@ -489,6 +489,10 @@ Prefab:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 63.16
       objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: 3a8ab4f370be5413e921bd4d97b952da, type: 3}
+      propertyPath: m_Name
+      value: Ethan (Delta Mush)
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 3a8ab4f370be5413e921bd4d97b952da, type: 3}
   m_IsPrefabParent: 0
@@ -507,15 +511,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ddff09ac0ce84f0387c8bd240fb06cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  iterations: 16
+  iterations: 10
   deformNormals: 1
   weightedSmooth: 1
+  useCompute: 1
   debug: 0
   smoothOnly: 0
-  useCompute: 0
-  shader: {fileID: 0}
-  computeShader: {fileID: 0}
-  material: {fileID: 0}
+  ductTapedShader: {fileID: 4800000, guid: fc73d8399d3274423b9e76384db6164c, type: 3}
+  computeShader: {fileID: 7200000, guid: a0f745547481c4de8b248c0d7cff47ba, type: 3}
   usePrefilteredBoneWeights: 0
 --- !u!1 &692929622
 GameObject:
@@ -686,15 +689,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ddff09ac0ce84f0387c8bd240fb06cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  iterations: 16
+  iterations: 10
   deformNormals: 1
   weightedSmooth: 1
+  useCompute: 1
   debug: 0
   smoothOnly: 0
-  useCompute: 0
-  shader: {fileID: 0}
+  ductTapedShader: {fileID: 4800000, guid: fc73d8399d3274423b9e76384db6164c, type: 3}
   computeShader: {fileID: 7200000, guid: a0f745547481c4de8b248c0d7cff47ba, type: 3}
-  material: {fileID: 2100000, guid: 6f848abc69c284bb4895b37f46b540df, type: 2}
   usePrefilteredBoneWeights: 0
 --- !u!1001 &1872506676
 Prefab:
@@ -885,7 +887,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 100000, guid: 3a8ab4f370be5413e921bd4d97b952da, type: 3}
       propertyPath: m_Name
-      value: Ethan (1)
+      value: Ethan (Skinning)
       objectReference: {fileID: 0}
     - target: {fileID: 9500000, guid: 3a8ab4f370be5413e921bd4d97b952da, type: 3}
       propertyPath: m_Enabled
@@ -913,13 +915,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ddff09ac0ce84f0387c8bd240fb06cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  iterations: 16
+  iterations: 10
   deformNormals: 1
   weightedSmooth: 1
+  useCompute: 1
   debug: 0
   smoothOnly: 1
-  useCompute: 0
-  shader: {fileID: 0}
-  computeShader: {fileID: 0}
-  material: {fileID: 0}
+  ductTapedShader: {fileID: 4800000, guid: fc73d8399d3274423b9e76384db6164c, type: 3}
+  computeShader: {fileID: 7200000, guid: a0f745547481c4de8b248c0d7cff47ba, type: 3}
   usePrefilteredBoneWeights: 0

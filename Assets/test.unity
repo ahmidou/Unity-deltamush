@@ -467,8 +467,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ddff09ac0ce84f0387c8bd240fb06cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  iterations: 16
+  iterations: 10
   deformNormals: 1
   weightedSmooth: 1
+  useCompute: 1
   debug: 0
   smoothOnly: 0
+  ductTapedShader: {fileID: 4800000, guid: fc73d8399d3274423b9e76384db6164c, type: 3}
+  computeShader: {fileID: 7200000, guid: a0f745547481c4de8b248c0d7cff47ba, type: 3}
+  usePrefilteredBoneWeights: 0
