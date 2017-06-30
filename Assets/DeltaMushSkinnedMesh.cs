@@ -77,25 +77,25 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 		// Compute
 		if (SystemInfo.supportsComputeShaders && computeShader && ductTapedShader)
 		{
-			verticesCB = new ComputeBuffer(mesh.vertices.Length, 12);
+			verticesCB = new ComputeBuffer(mesh.vertices.Length, 3*sizeof(float));
+			normalsCB = new ComputeBuffer(mesh.vertices.Length, 3*sizeof(float));
+			weightsCB = new ComputeBuffer(mesh.vertices.Length, 4*sizeof(float) + 4*sizeof(int));
 			verticesCB.SetData(mesh.vertices);
-			normalsCB = new ComputeBuffer(mesh.vertices.Length, 12);
 			normalsCB.SetData(mesh.normals);
-			weightsCB = new ComputeBuffer(mesh.vertices.Length, 4*2*4);
 			weightsCB.SetData(mesh.boneWeights);
 
-			adjacencyCB = new ComputeBuffer(adjacencyMatrix.Length, 4);
+			adjacencyCB = new ComputeBuffer(adjacencyMatrix.Length, sizeof(int));
 			var adjArray = new int[adjacencyMatrix.Length];
 			Buffer.BlockCopy(adjacencyMatrix, 0, adjArray, 0, adjacencyMatrix.Length * sizeof(int));
 			adjacencyCB.SetData(adjArray);
 
-			bonesCB = new ComputeBuffer(skin.bones.Length, 4*4*4);
-			deltavCB = new ComputeBuffer(mesh.vertices.Length, 12);
-			deltanCB = new ComputeBuffer(mesh.vertices.Length, 12);
+			bonesCB = new ComputeBuffer(skin.bones.Length, 16*sizeof(float));
+			deltavCB = new ComputeBuffer(mesh.vertices.Length, 3*sizeof(float));
+			deltanCB = new ComputeBuffer(mesh.vertices.Length, 3*sizeof(float));
 
-			outputCB[0] = new ComputeBuffer(mesh.vertices.Length, 6*4);
-			outputCB[1] = new ComputeBuffer(mesh.vertices.Length, 6*4);
-			outputCB[2] = new ComputeBuffer(mesh.vertices.Length, 6*4);
+			outputCB[0] = new ComputeBuffer(mesh.vertices.Length, 6*sizeof(float));
+			outputCB[1] = new ComputeBuffer(mesh.vertices.Length, 6*sizeof(float));
+			outputCB[2] = new ComputeBuffer(mesh.vertices.Length, 6*sizeof(float));
 
 			deformKernel = computeShader.FindKernel("DeformMesh");
 			computeShader.SetBuffer(deformKernel, "Vertices", verticesCB);
