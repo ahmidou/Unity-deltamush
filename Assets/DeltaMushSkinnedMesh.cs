@@ -14,7 +14,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	public bool smoothOnly = false;
 
 	internal Mesh mesh;
-	internal Mesh outMesh;
+	internal Mesh meshForCPUOutput;
 	internal SkinnedMeshRenderer skin;
 
 	struct DeformedMesh
@@ -68,7 +68,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	{
 		skin = GetComponent<SkinnedMeshRenderer>();
 		mesh = skin.sharedMesh;
-		outMesh = Instantiate(mesh);
+		meshForCPUOutput = Instantiate(mesh);
 
 		deformedMesh = new DeformedMesh(mesh.vertexCount);
 
@@ -381,6 +381,14 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 				deformedMesh.normals[i] = deformedMesh.normals[i] + deformedMesh.deltaN[i];
 				//deformedMesh.normals[i].Normalize();
 			}
+
+		Bounds bounds = new Bounds();
+		for (int i = 0; i < deformedMesh.vertexCount; i++)
+			bounds.Encapsulate(deformedMesh.vertices[i]);
+
+		meshForCPUOutput.vertices = deformedMesh.vertices;
+		meshForCPUOutput.normals = deformedMesh.normals;
+		meshForCPUOutput.bounds = bounds;
 	}
 
 	void UpdateMeshOnGPU()
@@ -426,20 +434,9 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	void DrawMesh()
 	{
 		if (useCompute)
-		{
 			Graphics.DrawMesh(mesh, Matrix4x4.identity, ductTapedMaterial, 0);
-			return;
-		}
-
-		Bounds bounds = new Bounds();
-		for (int i = 0; i < deformedMesh.vertexCount; i++)
-			bounds.Encapsulate(deformedMesh.vertices[i]);
-
-		outMesh.vertices = deformedMesh.vertices;
-		outMesh.normals = deformedMesh.normals;
-		outMesh.bounds = bounds;
-
-		Graphics.DrawMesh(outMesh, Matrix4x4.identity, skin.sharedMaterial, 0);
+		else
+			Graphics.DrawMesh(meshForCPUOutput, Matrix4x4.identity, skin.sharedMaterial, 0);
 	}
 
 	void DrawVertices()
