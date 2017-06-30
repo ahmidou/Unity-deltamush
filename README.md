@@ -4,6 +4,8 @@ Delta Mush **GPU** implementation via Compute shader.
 
 Contains C# implementation for reference.
 
+Not in production quality :) Requires some duct taping with Standard shader in order to render results.
+
 
 ## Overview
 
