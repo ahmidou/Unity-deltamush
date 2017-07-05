@@ -10,8 +10,12 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	public bool weightedSmooth = true;
 	public bool useCompute = true;
 
-	public bool debug = false;
-	public bool smoothOnly = false;
+	public enum DebugMode { Off, CompareWithSkinning, SmoothOnly, Deltas }
+
+	public DebugMode debugMode = DebugMode.Off;
+
+	bool disableDeltaPass { get { return (debugMode == DebugMode.SmoothOnly || debugMode == DebugMode.Deltas ); } }
+	bool actuallyUseCompute { get { return useCompute && debugMode != DebugMode.CompareWithSkinning && debugMode != DebugMode.Deltas && !usePrefilteredBoneWeights; } }
 
 	internal Mesh mesh;
 	internal Mesh meshForCPUOutput;
@@ -150,17 +154,21 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	{
 		UpdateDeltaVectors();
 
-		if (useCompute)
+		bool compareWithSkinning = debugMode == DebugMode.CompareWithSkinning;
+
+		if (actuallyUseCompute)
 			UpdateMeshOnGPU();
 		else
 			UpdateMeshOnCPU();
 
-		if (debug)
-			DrawVertices();
+		if (compareWithSkinning)
+			DrawVerticesVsSkin();
+		else if (debugMode == DebugMode.Deltas)
+			DrawDeltas();
 		else
 			DrawMesh();
 
-		skin.enabled = debug;
+		skin.enabled = compareWithSkinning;
 	}
 
 	#region Adjacency matrix cache
@@ -270,7 +278,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 		deltaIterations = iterations;
 
 		// compute
-		if (useCompute)
+		if (actuallyUseCompute)
 		{
 			laplacianKernel = GetSmoothKernel();
 			computeShader.SetBuffer(laplacianKernel, "Adjacency", adjacencyCB);
@@ -307,8 +315,8 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 				deformedMesh.deltaV[i] = vertexMatrix.MultiplyVector(deltaV[i]);
 				deformedMesh.deltaN[i] = vertexMatrix.MultiplyVector(deltaN[i]);
 			}
-
-			if (iterations > 0 && !smoothOnly)
+				
+			if (iterations > 0 && !disableDeltaPass)
 				for (int i = 0; i < deformedMesh.vertexCount; i++)
 					deformedMesh.vertices[i] = deformedMesh.vertices[i] + deformedMesh.deltaV[i];
 
@@ -318,6 +326,9 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 					deformedMesh.normals[i] = deformedMesh.normals[i] + deformedMesh.deltaN[i];
 					//deformedMesh.normals[i].Normalize();
 				}
+		
+			meshForCPUOutput.vertices = deformedMesh.vertices;
+			meshForCPUOutput.normals = deformedMesh.normals;
 
 			return;
 		}
@@ -371,7 +382,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 				deformedMesh.normals = smoothFilter(deformedMesh.normals, adjacencyMatrix);
 		}
 
-		if (iterations > 0 && !smoothOnly)
+		if (iterations > 0 && !disableDeltaPass)
 			for (int i = 0; i < deformedMesh.vertexCount; i++)
 				deformedMesh.vertices[i] = deformedMesh.vertices[i] + deformedMesh.deltaV[i];
 
@@ -421,7 +432,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 				computeShader.SetBuffer(laplacianKernel, "Delta", outputCB[2]);
 				ductTapedMaterial.SetBuffer("Vertices", outputCB[(i+1)%2]);
 			}
-			computeShader.SetBool("DeltaPass", lastIteration && !smoothOnly);
+			computeShader.SetBool("DeltaPass", lastIteration && !disableDeltaPass);
 			computeShader.SetBuffer(laplacianKernel, "Input", outputCB[i%2]);
 			computeShader.SetBuffer(laplacianKernel, "Output", outputCB[(i+1)%2]);
 			computeShader.Dispatch(laplacianKernel, threadGroupsX, 1, 1);
@@ -433,16 +444,30 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	#region Helpers
 	void DrawMesh()
 	{
-		if (useCompute)
+		if (actuallyUseCompute)
 		{
-			mesh.bounds = skin.bounds; // skin is actually disabled, so it only remembers last animation frame
+			mesh.bounds = skin.bounds; // skin is actually disabled, so it only remembers the last animation frame
 			Graphics.DrawMesh(mesh, Matrix4x4.identity, ductTapedMaterial, 0);
 		}
 		else
 			Graphics.DrawMesh(meshForCPUOutput, Matrix4x4.identity, skin.sharedMaterial, 0);
 	}
 
-	void DrawVertices()
+	void DrawDeltas()
+	{
+		for (int i = 0; i < deformedMesh.vertexCount; i++)
+		{
+			Vector3 position = deformedMesh.vertices[i];
+			Vector3 delta = deformedMesh.deltaV[i];
+
+			Color color = Color.green;
+			Debug.DrawRay(position, delta, color);
+		}
+
+		Graphics.DrawMesh(meshForCPUOutput, Matrix4x4.identity, skin.sharedMaterial, 0);
+	}
+
+	void DrawVerticesVsSkin()
 	{
 		for (int i = 0; i < deformedMesh.vertexCount; i++)
 		{
