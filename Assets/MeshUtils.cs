@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Profiling;
 using System.Collections;
 using System.Collections.Generic;
  
@@ -8,195 +9,90 @@ using System.Collections.Generic;
 public class MeshUtils : MonoBehaviour 
 {
 	const float EPSILON = 1e-8f;
-	public static int[,] buildAdjacencyMatrix (Vector3[] v, int[] t, int maxNeighbors, float minSqrDistance = EPSILON )
-	{
-		var adj = new int[v.Length, maxNeighbors];
 
-		int realMaxNeighbors = 0;
-		for (int i=0; i<v.Length; i++)
+	// Collect information about vertex adjacency into matrix
+	public static int[,] BuildAdjacencyMatrix (Vector3[] v, int[] t, int maxNeighbors, float minSqrDistance = EPSILON)
+	{
+		Profiler.BeginSample("BuildAdjacencyMatrix");
+		var adj = new int[v.Length, maxNeighbors];
+		for (int i = 0; i < adj.GetLength(0); ++i)
+			for (int j = 0; j < adj.GetLength(1); ++j)
+				adj[i, j] = -1;
+
+		int[] mapToUnique = MapVerticesToUniquePositions(v, minSqrDistance);
+
+		for(int tri = 0; tri < t.Length; tri = tri + 3)
 		{
-			var indices = findAdjacentNeighborIndexes(v, t, v[i], minSqrDistance);
-			for (int j=0; j < maxNeighbors; j++)
-				if (j < indices.Count)
-					adj[i,j] = indices[j];
-				else
-					adj[i,j] = -1;
-			realMaxNeighbors = Mathf.Max(indices.Count, realMaxNeighbors);
+			AddEdgeToAdjacencyMatrix(ref adj, mapToUnique, t[tri  ], t[tri+1]);
+			AddEdgeToAdjacencyMatrix(ref adj, mapToUnique, t[tri  ], t[tri+2]);
+			AddEdgeToAdjacencyMatrix(ref adj, mapToUnique, t[tri+1], t[tri+2]);
 		}
-		Debug.Log(realMaxNeighbors);
+
+		for (int i = 0; i < v.Length; ++i)
+		{
+			var u = mapToUnique[i];
+			if (u == i)
+				continue;
+
+			Debug.Assert(adj[i, 0] == -1);
+			for (int j = 0; j < maxNeighbors && adj[u, j] != -1; ++j)
+				adj[i, j] = adj[u, j];
+		}
+		Profiler.EndSample();
 		return adj;
 	}
 
-	// Finds a set of adjacent vertices for a given vertex
-	// Note the success of this routine expects only the set of neighboring faces to eacn contain one vertex corresponding
-	// to the vertex in question
-	public static List<Vector3> findAdjacentNeighbors ( Vector3[] v, int[] t, Vector3 vertex, float minSqrDistance = EPSILON )
+	// Find vertices that approximately share the same positions
+	// Returns array of indices pointing to the first occurance of particular position in the vertex array
+	public static int[] MapVerticesToUniquePositions (Vector3[] v, float minSqrDistance = EPSILON)
 	{
-		List<Vector3>adjacentV = new List<Vector3>();
-		List<int>facemarker = new List<int>();
-		int facecount = 0;	
- 
-		// Find matching vertices
-		for (int i=0; i<v.Length; i++)
-			/*if (Mathf.Approximately (vertex.x, v[i].x) && 
-				Mathf.Approximately (vertex.y, v[i].y) && 
-				Mathf.Approximately (vertex.z, v[i].z))*/
-			if ((vertex - v[i]).sqrMagnitude < minSqrDistance)
-			{
-					int v1 = 0;
-					int v2 = 0;
-				    bool marker = false;
- 
-					// Find vertex indices from the triangle array
-					for(int k=0; k<t.Length; k=k+3)
-						if(facemarker.Contains(k) == false)
-						{
-							v1 = 0;
-							v2 = 0;
-							marker = false;
- 
-							if(i == t[k])
-							{
-								v1 = t[k+1];
-								v2 = t[k+2];
-								marker = true;
-							}
- 
-							if(i == t[k+1])
-							{
-								v1 = t[k];
-								v2 = t[k+2];
-								marker = true;
-							}
- 
-							if(i == t[k+2])
-							{
-								v1 = t[k];
-								v2 = t[k+1];
-								marker = true;
-							}
- 
-							facecount++;
-							if(marker)
-							{
-								// Once face has been used mark it so it does not get used again
-								facemarker.Add(k);
- 
-								// Add non duplicate vertices to the list
-								if ( isVertexExist(adjacentV, v[v1]) == false )
-								{	
-									adjacentV.Add(v[v1]);
-									//Debug.Log("Adjacent vertex index = " + v1);
-								}
- 
-								if ( isVertexExist(adjacentV, v[v2]) == false )
-								{
-									adjacentV.Add(v[v2]);
-									//Debug.Log("Adjacent vertex index = " + v2);
-								}
-								marker = false;
-							}
-						}
-			}
- 
-		//Debug.Log("Faces Found = " + facecount);
- 
-        return adjacentV;
+		Profiler.BeginSample("MapVerticesToUniquePositions");
+
+		var mapToUnique = new int[v.Length];
+		for (int i = 0; i < mapToUnique.Length; ++i)
+			mapToUnique[i] = -1;
+
+		for (int i = 0; i < v.Length; i++)
+			for (int j = 0; j < v.Length; j++)
+				if (mapToUnique[j] == -1) // skip, if already pointing to unique position
+				{
+					var dx = v[i].x - v[j].x;
+					var dy = v[i].y - v[j].y;
+					var dz = v[i].z - v[j].z;
+					//if (Vector3.Distance(v[i], v[j]) < minDistance) // 2794ms
+					//if ((v[j] - v[i]).sqrMagnitude < minSqrDistance) // 2796ms
+					if (dx*dx+dy*dy+dz*dz < minSqrDistance) // 687ms
+						mapToUnique[j] = i;
+				}
+
+		Profiler.EndSample();
+		return mapToUnique;
 	}
- 
- 
-	// Finds a set of adjacent vertices indexes for a given vertex
-	// Note the success of this routine expects only the set of neighboring faces to eacn contain one vertex corresponding
-	// to the vertex in question
-	public static List<int> findAdjacentNeighborIndexes ( Vector3[] v, int[] t, Vector3 vertex, float minSqrDistance = EPSILON )
+
+	private static void AddVertexToAdjacencyMatrix(ref int[,] adjacencyMatrix, int from, int to)
 	{
-		List<int>adjacentIndexes = new List<int>();
-		List<Vector3>adjacentV = new List<Vector3>();
-		List<int>facemarker = new List<int>();
-		int facecount = 0;	
- 
-		// Find matching vertices
-		for (int i=0; i<v.Length; i++)
-			/*if (Mathf.Approximately (vertex.x, v[i].x) && 
-				Mathf.Approximately (vertex.y, v[i].y) && 
-				Mathf.Approximately (vertex.z, v[i].z))*/
-			if ((vertex - v[i]).sqrMagnitude < minSqrDistance)
+		Profiler.BeginSample("AddVertexToAdjacencyMatrix");
+		var maxNeighbors = adjacencyMatrix.GetLength(1);
+		for (int i = 0; i < maxNeighbors; i++)
+		{
+			if (adjacencyMatrix[from, i] == to)
+				break;
+			
+			if (adjacencyMatrix[from, i] == -1)
 			{
-					int v1 = 0;
-					int v2 = 0;
-				    bool marker = false;
- 
-					// Find vertex indices from the triangle array
-					for(int k=0; k<t.Length; k=k+3)
-						if(facemarker.Contains(k) == false)
-						{
-							v1 = 0;
-							v2 = 0;
-							marker = false;
- 
-							if(i == t[k])
-							{
-								v1 = t[k+1];
-								v2 = t[k+2];
-								marker = true;
-							}
- 
-							if(i == t[k+1])
-							{
-								v1 = t[k];
-								v2 = t[k+2];
-								marker = true;
-							}
- 
-							if(i == t[k+2])
-							{
-								v1 = t[k];
-								v2 = t[k+1];
-								marker = true;
-							}
- 
-							facecount++;
-							if(marker)
-							{
-								// Once face has been used mark it so it does not get used again
-								facemarker.Add(k);
- 
-								// Add non duplicate vertices to the list
-								if ( isVertexExist(adjacentV, v[v1]) == false )
-								{	
-									adjacentV.Add(v[v1]);
-									adjacentIndexes.Add(v1);
-									//Debug.Log("Adjacent vertex index = " + v1);
-								}
- 
-								if ( isVertexExist(adjacentV, v[v2]) == false )
-								{
-									adjacentV.Add(v[v2]);
-									adjacentIndexes.Add(v2);
-									//Debug.Log("Adjacent vertex index = " + v2);
-								}
-								marker = false;
-							}
-						}
+				adjacencyMatrix[from, i] = to;
+				break;
 			}
- 
-		//Debug.Log("Faces Found = " + facecount);
- 
-        return adjacentIndexes;
+		}
+		Profiler.EndSample();
 	}
- 
-	// Does the vertex v exist in the list of vertices
-	static bool isVertexExist(List<Vector3>adjacentV, Vector3 v, float minSqrDistance = EPSILON )
+
+	private static void AddEdgeToAdjacencyMatrix(ref int[,] adjacencyMatrix, int[] mapToUnique, int v0, int v1)
 	{
-		bool marker = false;
-		foreach (Vector3 vec in adjacentV)
-		  //if (Mathf.Approximately(vec.x,v.x) && Mathf.Approximately(vec.y,v.y) && Mathf.Approximately(vec.z,v.z))
-			if ((vec - v).sqrMagnitude < minSqrDistance)
-			{
-			  marker = true;
-			  break;
-			}
- 
-		return marker;
+		var u0 = mapToUnique[v0];
+		var u1 = mapToUnique[v1];
+
+		AddVertexToAdjacencyMatrix(ref adjacencyMatrix, u0, u1);
+		AddVertexToAdjacencyMatrix(ref adjacencyMatrix, u1, u0);
 	}
 }
