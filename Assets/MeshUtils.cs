@@ -45,21 +45,23 @@ public class MeshUtils : MonoBehaviour
 			mapToUnique[i] = -1;
 
 		for (int i = 0; i < v.Length; i++)
-			for (int j = 0; j < v.Length; j++)
+			for (int j = i; j < v.Length; j++)
 				if (mapToUnique[j] == -1) // skip, if already pointing to unique position
 				{
-					var dx = v[i].x - v[j].x;
-					var dy = v[i].y - v[j].y;
-					var dz = v[i].z - v[j].z;
+					var u = mapToUnique[i];
+					if (u == -1)
+						u = i;
+						
+					var dx = v[u].x - v[j].x;
+					var dy = v[u].y - v[j].y;
+					var dz = v[u].z - v[j].z;
 					//if (Vector3.Distance(v[i], v[j]) < minDistance) // 2794ms
 					//if ((v[j] - v[i]).sqrMagnitude < minSqrDistance) // 2796ms
 					if (dx*dx+dy*dy+dz*dz < minSqrDistance) // 687ms
 					{
 						if (mapToUnique[i] == -1)
-							mapToUnique[i] = i;
-
-						if (mapToUnique[i] == i)
-							mapToUnique[j] = i;
+							mapToUnique[i] = u; // found new unique vertex
+						mapToUnique[j] = u;
 					}
 				}
 
