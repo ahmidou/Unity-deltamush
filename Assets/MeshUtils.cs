@@ -113,15 +113,6 @@ public class MeshUtils : MonoBehaviour
 				continue;
 
 			Debug.Assert(adjacencyMatrix[i, 0] == -1);
-			if (adjacencyMatrix[i, 0] != -1)
-			{
-				string s = "";
-				for (int j = 0; j < mapToUnique.Length; ++j)
-					if (mapToUnique[j] == i)
-						s += j.ToString() + " ";
-
-				Debug.Log(u.ToString() + " : " + i.ToString() + " adj[]=" + adjacencyMatrix[i, 0] + " <> " + s);
-			}
 			for (int j = 0; j < maxNeighbors && adjacencyMatrix[u, j] != -1; ++j)
 				adjacencyMatrix[i, j] = adjacencyMatrix[u, j];
 		}
