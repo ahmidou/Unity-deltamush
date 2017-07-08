@@ -339,7 +339,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 3a8ab4f370be5413e921bd4d97b952da, type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 400148, guid: 3a8ab4f370be5413e921bd4d97b952da, type: 3}
       propertyPath: m_LocalRotation.x
@@ -515,6 +515,7 @@ MonoBehaviour:
   deformNormals: 1
   weightedSmooth: 1
   useCompute: 1
+  adjacencyMatchingVertexTolerance: 0.01
   debugMode: 0
   ductTapedShader: {fileID: 4800000, guid: fc73d8399d3274423b9e76384db6164c, type: 3}
   computeShader: {fileID: 7200000, guid: a0f745547481c4de8b248c0d7cff47ba, type: 3}
@@ -671,7 +672,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 133.81, y: -30, z: 0}
 --- !u!1 &1451678571 stripped
 GameObject:
@@ -692,6 +693,7 @@ MonoBehaviour:
   deformNormals: 1
   weightedSmooth: 1
   useCompute: 1
+  adjacencyMatchingVertexTolerance: 0.01
   debugMode: 0
   ductTapedShader: {fileID: 4800000, guid: fc73d8399d3274423b9e76384db6164c, type: 3}
   computeShader: {fileID: 7200000, guid: a0f745547481c4de8b248c0d7cff47ba, type: 3}
@@ -917,6 +919,7 @@ MonoBehaviour:
   deformNormals: 1
   weightedSmooth: 1
   useCompute: 1
+  adjacencyMatchingVertexTolerance: 0.01
   debugMode: 2
   ductTapedShader: {fileID: 4800000, guid: fc73d8399d3274423b9e76384db6164c, type: 3}
   computeShader: {fileID: 7200000, guid: a0f745547481c4de8b248c0d7cff47ba, type: 3}
