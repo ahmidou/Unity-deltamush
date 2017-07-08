@@ -20,4 +20,4 @@ The Delta Mush deformer is based on work done by: *Joe Mancewicz, Matt L. Derkse
 
 ### Overview in a single picture
 
-![Comparison.png](https://bitbucket.org/repo/Eg6kznG/images/1122461644-Comparison.png)
+![Comparison.jpg](https://bitbucket.org/repo/Eg6kznG/images/2175753417-Comparison.jpg)
