@@ -10,6 +10,8 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 	public bool weightedSmooth = true;
 	public bool useCompute = true;
 
+	public float adjacencyMatchingVertexTolerance = 1e-4f;
+
 	public enum DebugMode { Off, CompareWithSkinning, SmoothOnly, Deltas }
 
 	public DebugMode debugMode = DebugMode.Off;
@@ -76,7 +78,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 
 		deformedMesh = new DeformedMesh(mesh.vertexCount);
 
-		adjacencyMatrix = GetCachedAdjacencyMatrix(mesh);
+		adjacencyMatrix = GetCachedAdjacencyMatrix(mesh, adjacencyMatchingVertexTolerance);
 
 		// Compute
 		if (SystemInfo.supportsComputeShaders && computeShader && ductTapedShader)
@@ -196,12 +198,12 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 		}
 	}
 
-	static private int[,] GetCachedAdjacencyMatrix(Mesh mesh)
+	static private int[,] GetCachedAdjacencyMatrix(Mesh mesh, float adjacencyMatchingVertexTolerance)
 	{
 		int [,] adjacencyMatrix;
 		#if UNITY_EDITOR
 		//var path = Path.Combine(Application.persistentDataPath, AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(mesh)) + ".adj");
-		var path = Path.Combine("", AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(mesh)) + ".adj");
+		var path = Path.Combine("", AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(mesh)) + "_" + adjacencyMatchingVertexTolerance.ToString() + ".adj");
 		Debug.Log(path);
 		if (File.Exists(path))
 		{
@@ -211,8 +213,8 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 		else
 		{
 		#endif
-			adjacencyMatrix = MeshUtils.buildAdjacencyMatrix(mesh.vertices, mesh.triangles, 16);
-			#if UNITY_EDITOR
+			adjacencyMatrix = MeshUtils.BuildAdjacencyMatrix(mesh.vertices, mesh.triangles, 16, adjacencyMatchingVertexTolerance*adjacencyMatchingVertexTolerance);
+		#if UNITY_EDITOR
 			var json = JsonUtility.ToJson(new AdjacencyMatrix(adjacencyMatrix));
 			Debug.Log(json);
 
@@ -224,7 +226,7 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 				}
 			}
 		}
-			#endif
+		#endif
 		return adjacencyMatrix;
 	}
 	#endregion
@@ -278,12 +280,8 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 		deltaIterations = iterations;
 
 		// compute
-		if (actuallyUseCompute)
+		if (deltavCB != null && deltanCB != null)
 		{
-			laplacianKernel = GetSmoothKernel();
-			computeShader.SetBuffer(laplacianKernel, "Adjacency", adjacencyCB);
-			computeShader.SetInt("AdjacentNeighborCount", adjacencyMatrix.GetLength(1));
-
 			deltavCB.SetData(deltaV);
 			deltanCB.SetData(deltaN);
 		}
@@ -425,7 +423,11 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 		computeShader.Dispatch(deformKernel, threadGroupsX, 1, 1);
 
 		for (int i = 0; i < iterations; i++)
-		{
+		{	
+			laplacianKernel = GetSmoothKernel();
+			computeShader.SetBuffer(laplacianKernel, "Adjacency", adjacencyCB);
+			computeShader.SetInt("AdjacentNeighborCount", adjacencyMatrix.GetLength(1));
+
 			bool lastIteration = i == iterations - 1;
 			if (lastIteration)
 			{
