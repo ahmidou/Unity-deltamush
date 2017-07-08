@@ -66,16 +66,28 @@ public class SmoothFilter : MonoBehaviour
 				float x = sv[i].x - sv[vi].x;
 				float y = sv[i].y - sv[vi].y;
 				float z = sv[i].z - sv[vi].z;
-				float w = 1.0f / Mathf.Sqrt(x*x+y*y+z*z);
+				float sqr = x*x+y*y+z*z;
+				if (sqr < 1e-8f)
+					continue;
+				float w = 1.0f / Mathf.Sqrt(sqr);
 				dx += x * w;
 				dy += y * w;
 				dz += z * w;
 				totalWeight += w;
 			}
 
-			wv[vi].x = sv[vi].x + dx / totalWeight;
-			wv[vi].y = sv[vi].y + dy / totalWeight;
-			wv[vi].z = sv[vi].z + dz / totalWeight;
+			if (totalWeight > 1e-4f)
+			{
+				wv[vi].x = sv[vi].x + dx / totalWeight;
+				wv[vi].y = sv[vi].y + dy / totalWeight;
+				wv[vi].z = sv[vi].z + dz / totalWeight;
+			}
+			else
+			{
+				wv[vi].x = sv[vi].x;
+				wv[vi].y = sv[vi].y;
+				wv[vi].z = sv[vi].z;
+			}
 		}
 
 		return wv;

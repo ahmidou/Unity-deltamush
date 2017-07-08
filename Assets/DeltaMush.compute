@@ -110,8 +110,13 @@ void WeightedLaplacianFilter (uint3 groupID : SV_GroupID, uint3 groupThreadID : 
 		float3 posDiff = Input[i].pos - Input[idx].pos;
 		float3 nrmDiff = Input[i].normal - Input[idx].normal;
 
-		float posWeight = rsqrt(dot(posDiff, posDiff));
-		float nrmWeight = rsqrt(dot(nrmDiff, nrmDiff));
+		float posSqr = dot(posDiff, posDiff);
+		float nrmSqr = dot(nrmDiff, nrmDiff);
+		if (posSqr < 1e-8f)
+			continue;
+
+		float posWeight = rsqrt(posSqr);
+		float nrmWeight = rsqrt(nrmSqr);
 
 		p += posDiff * posWeight;
 		n += nrmDiff * nrmWeight;
@@ -120,8 +125,8 @@ void WeightedLaplacianFilter (uint3 groupID : SV_GroupID, uint3 groupThreadID : 
 		nrmTotalWeight += nrmWeight;
 	}
 
-	Output[idx].pos = Input[idx].pos + p / posTotalWeight;
-	Output[idx].normal = Input[idx].normal + n / nrmTotalWeight;
+	Output[idx].pos = Input[idx].pos + ((posTotalWeight > 1e-4f) ? p / posTotalWeight: 0.0f);
+	Output[idx].normal = Input[idx].normal + ((nrmTotalWeight > 1e-4f) ? (n / nrmTotalWeight): 0.0f);
 
 	if (DeltaPass)
 	{
