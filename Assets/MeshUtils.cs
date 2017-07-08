@@ -28,16 +28,8 @@ public class MeshUtils : MonoBehaviour
 			AddEdgeToAdjacencyMatrix(ref adj, mapToUnique, t[tri+1], t[tri+2]);
 		}
 
-		for (int i = 0; i < v.Length; ++i)
-		{
-			var u = mapToUnique[i];
-			if (u == i)
-				continue;
+		BroadcastAdjacencyFromUniqueToAllVertices(ref adj, mapToUnique);
 
-			Debug.Assert(adj[i, 0] == -1);
-			for (int j = 0; j < maxNeighbors && adj[u, j] != -1; ++j)
-				adj[i, j] = adj[u, j];
-		}
 		Profiler.EndSample();
 		return adj;
 	}
@@ -94,5 +86,26 @@ public class MeshUtils : MonoBehaviour
 
 		AddVertexToAdjacencyMatrix(ref adjacencyMatrix, u0, u1);
 		AddVertexToAdjacencyMatrix(ref adjacencyMatrix, u1, u0);
+	}
+
+	private static void BroadcastAdjacencyFromUniqueToAllVertices (ref int[,] adjacencyMatrix, int[] mapToUnique)
+	{
+		Profiler.BeginSample("BroadcastAdjacencyFromUniqueToAllVertices");
+
+		var maxNeighbors = adjacencyMatrix.GetLength(1);
+		Debug.Assert(adjacencyMatrix.GetLength(0) == mapToUnique.Length);
+
+		for (int i = 0; i < mapToUnique.Length; ++i)
+		{
+			var u = mapToUnique[i];
+			if (u == i)
+				continue;
+
+			Debug.Assert(adjacencyMatrix[i, 0] == -1);
+			for (int j = 0; j < maxNeighbors && adjacencyMatrix[u, j] != -1; ++j)
+				adjacencyMatrix[i, j] = adjacencyMatrix[u, j];
+		}
+
+		Profiler.EndSample();
 	}
 }
