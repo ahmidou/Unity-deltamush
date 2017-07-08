@@ -54,8 +54,17 @@ public class MeshUtils : MonoBehaviour
 					//if (Vector3.Distance(v[i], v[j]) < minDistance) // 2794ms
 					//if ((v[j] - v[i]).sqrMagnitude < minSqrDistance) // 2796ms
 					if (dx*dx+dy*dy+dz*dz < minSqrDistance) // 687ms
-						mapToUnique[j] = i;
+					{
+						if (mapToUnique[i] == -1)
+							mapToUnique[i] = i;
+
+						if (mapToUnique[i] == i)
+							mapToUnique[j] = i;
+					}
 				}
+
+		for (int i = 0; i < v.Length; i++)
+			Debug.Assert(mapToUnique[i] != -1);
 
 		Profiler.EndSample();
 		return mapToUnique;
@@ -102,6 +111,15 @@ public class MeshUtils : MonoBehaviour
 				continue;
 
 			Debug.Assert(adjacencyMatrix[i, 0] == -1);
+			if (adjacencyMatrix[i, 0] != -1)
+			{
+				string s = "";
+				for (int j = 0; j < mapToUnique.Length; ++j)
+					if (mapToUnique[j] == i)
+						s += j.ToString() + " ";
+
+				Debug.Log(u.ToString() + " : " + i.ToString() + " adj[]=" + adjacencyMatrix[i, 0] + " <> " + s);
+			}
 			for (int j = 0; j < maxNeighbors && adjacencyMatrix[u, j] != -1; ++j)
 				adjacencyMatrix[i, j] = adjacencyMatrix[u, j];
 		}
