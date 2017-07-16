@@ -54,7 +54,6 @@ public class SmoothFilter : MonoBehaviour
 			float dz = 0.0f;
 
 			float totalWeight = 0;
-			int count = 0;
 			for (int j=0; j<maxNeighbors; j++)
 			{
 				var i = adjacencyMatrix[vi, j];

@@ -350,12 +350,12 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 
 		for (int i = 0; i < mesh.vertexCount; i++)
 		{
-			BoneWeight weight = bw[i];
+			BoneWeight boneWeight = bw[i];
 
-			Matrix4x4 bm0 = boneMatrices[bw[i].boneIndex0];
-			Matrix4x4 bm1 = boneMatrices[bw[i].boneIndex1];
-			Matrix4x4 bm2 = boneMatrices[bw[i].boneIndex2];
-			Matrix4x4 bm3 = boneMatrices[bw[i].boneIndex3];
+			Matrix4x4 bm0 = boneMatrices[boneWeight.boneIndex0];
+			Matrix4x4 bm1 = boneMatrices[boneWeight.boneIndex1];
+			Matrix4x4 bm2 = boneMatrices[boneWeight.boneIndex2];
+			Matrix4x4 bm3 = boneMatrices[boneWeight.boneIndex3];
 
 			Matrix4x4 vertexMatrix = new Matrix4x4();
 
@@ -368,8 +368,8 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 				for (int n = 0; n < 16; n++)
 				{
 					vertexMatrix[n] =
-						bm0[n] * bw[i].weight0 +
-						bm1[n] * (1-bw[i].weight0);
+						bm0[n] * boneWeight.weight0 +
+						bm1[n] * (1-boneWeight.weight0);
 				}
 			}
 			else
@@ -377,10 +377,10 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 				for (int n = 0; n < 16; n++)
 				{
 					vertexMatrix[n] =
-						bm0[n] * bw[i].weight0 +
-						bm1[n] * bw[i].weight1 +
-						bm2[n] * bw[i].weight2 +
-						bm3[n] * bw[i].weight3;
+						bm0[n] * boneWeight.weight0 +
+						bm1[n] * boneWeight.weight1 +
+						bm2[n] * boneWeight.weight2 +
+						bm3[n] * boneWeight.weight3;
 				}
 			}
 
