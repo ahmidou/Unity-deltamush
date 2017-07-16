@@ -152,6 +152,23 @@ public class DeltaMushSkinnedMesh : MonoBehaviour
 		}
 	}
 
+	void OnDestroy()
+	{
+		if (verticesCB == null)
+			return;
+
+		verticesCB.Release();
+		normalsCB.Release();
+		deltavCB.Release();
+		deltanCB.Release();
+		weightsCB.Release();
+		bonesCB.Release();
+		adjacencyCB.Release();
+
+		foreach (var cb in outputCB)
+			cb.Release();
+	}
+
 	void LateUpdate()
 	{
 		UpdateDeltaVectors();
